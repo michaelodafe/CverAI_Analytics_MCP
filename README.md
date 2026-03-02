@@ -1,4 +1,4 @@
-# CVerAI Analytics
+# Cver AI Analytics
 
 > Ask questions about your platform in plain English. Get instant, data-backed answers — powered by **DeepSeek V3**, the **Model Context Protocol (MCP)**, and an autonomous agentic reasoning loop.
 
