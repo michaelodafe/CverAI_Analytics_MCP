@@ -6,7 +6,7 @@
 
 ## What this project does
 
-CVerAI is a job-matching AI startup with ~1,900 registered users, 24,000+ job postings, and an active WhatsApp bot for candidate interactions. Answering operational questions — "Which job categories are growing fastest?", "What are users complaining about on WhatsApp?" — used to require writing SQL by hand.
+Cver AI helps job seekers apply faster by auto-filling applications directly from WhatsApp and other platforms while tailoring resumes and cover letters to each role.
 
 This project replaces that with a **natural language analytics assistant** that:
 
