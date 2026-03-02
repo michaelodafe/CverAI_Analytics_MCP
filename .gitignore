@@ -1,0 +1,27 @@
+# Credentials — never commit these
+.env
+*.pem
+*.key
+*credentials*.txt
+*credentials*.json
+
+# Python
+*.pyc
+__pycache__/
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Docker volumes / data
+open-webui-data/
+node_modules/

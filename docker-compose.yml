@@ -1,0 +1,81 @@
+version: "3.9"
+
+# ═══════════════════════════════════════════════════════════════════
+#  CVerAI Analytics Stack
+#  ┌─────────────────┐     ┌────────────────┐     ┌─────────────┐
+#  │   Open WebUI    │────►│ DeepSeek Bridge│────►│ MCP Server  │
+#  │  (port 3000)    │     │   (port 8001)  │     │ (port 8002) │
+#  └─────────────────┘     └───────┬────────┘     └──────┬──────┘
+#                                  │ DeepSeek API         │
+#                                  ▼                      ▼
+#                           DeepSeek V3 (cloud)     GCP Postgres
+# ═══════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── 1. MCP Server ─────────────────────────────────────────────────
+  mcp-server:
+    build: ./mcp-server
+    container_name: cverai-mcp
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "8002:8000"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      # Check TCP port is open (avoids blocking on the SSE stream)
+      test: ["CMD", "python", "-c",
+             "import socket; s=socket.create_connection(('localhost',8000),timeout=3); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  # ── 2. DeepSeek Bridge ────────────────────────────────────────────
+  claude-bridge:
+    build: ./claude-bridge
+    container_name: cverai-bridge
+    environment:
+      DEEPSEEK_API_KEY:   ${DEEPSEEK_API_KEY}
+      DEEPSEEK_BASE_URL:  ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL:     ${DEEPSEEK_MODEL:-deepseek-chat}
+      MCP_SERVER_URL:     http://mcp-server:8000/mcp
+      MAX_TOKENS:         ${MAX_TOKENS:-8192}
+      MAX_ITERATIONS:     ${MAX_ITERATIONS:-15}
+    ports:
+      - "8001:8000"
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import socket; s=socket.create_connection(('localhost',8000),timeout=5); s.close()"]
+      interval: 15s
+      timeout: 8s
+      retries: 4
+      start_period: 20s
+
+  # ── 3. Open WebUI ─────────────────────────────────────────────────
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: cverai-webui
+    environment:
+      OPENAI_API_BASE_URLS: "http://claude-bridge:8000/v1"
+      OPENAI_API_KEYS:      "dummy-key"
+      ENABLE_OLLAMA_API:    "false"
+      WEBUI_NAME:           "CVerAI Analytics"
+      WEBUI_URL:            "http://localhost:3000"
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui-data:/app/backend/data
+    depends_on:
+      claude-bridge:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  open-webui-data:
